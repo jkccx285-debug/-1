@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نقشه‌کش مدرسه — CAD دوبعدی</title>
+<style>
+:root{--bg:#06050a;--pn:#110d1c;--g:#d4af37;--pu:#8b3fd9;--pl:#c77dff;--t:#ece8f5;--bd:#2b2142}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--t);font:13px Vazirmatn,Tahoma,"Segoe UI",sans-serif;overflow:hidden}
+#app{display:grid;height:100%;grid-template:"h h h" auto "t c l" 1fr "f f f" auto/62px 1fr 200px}
+header{grid-area:h;display:flex;gap:4px;align-items:center;padding:6px 8px;background:var(--pn);border-bottom:2px solid var(--g);flex-wrap:wrap}
+.logo{color:var(--g);font-size:16px;margin-left:10px}
+button{font:inherit;background:#1a1330;color:var(--g);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;cursor:pointer}
+button:hover{border-color:var(--g)}button:focus-visible,input:focus-visible{outline:2px solid var(--pl)}
+button.on{background:var(--pu);color:#fff;border-color:var(--g)}
+#tb{grid-area:t;background:var(--pn);border-left:1px solid var(--bd);overflow:auto;display:flex;flex-direction:column;gap:3px;padding:4px}
+#tb button{display:flex;flex-direction:column;align-items:center;padding:4px 0;font-size:10px;line-height:1.2}
+#tb button i{font-style:normal;font-size:18px}
+main{grid-area:c;position:relative;min-width:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;display:block}
+aside{grid-area:l;background:var(--pn);border-right:1px solid var(--bd);padding:6px;overflow:auto}
+aside h4{margin:4px 0;color:var(--g)}
+.ly{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid transparent;border-radius:6px}
+.ly.cur{border-color:var(--g);background:#1d1533}.ly span{flex:1;cursor:pointer}
+.ly input[type=color]{width:24px;height:20px;padding:0;border:0;background:none}
+#info{margin-top:8px;color:#b9aedd;line-height:1.7;direction:rtl}
+footer{grid-area:f;background:var(--pn);border-top:1px solid var(--bd)}
+#log{padding:3px 8px;color:var(--pl);min-height:20px}
+#cl{display:flex;align-items:center;gap:6px;padding:0 8px 4px}
+#cmd{flex:1;background:#000;color:var(--g);border:1px solid var(--g);border-radius:6px;padding:6px;font:14px Consolas,monospace;direction:ltr;text-align:left}
+#st{display:flex;gap:4px;padding:4px 8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--bd)}
+#xy{direction:ltr;color:var(--g);font-family:Consolas,monospace;min-width:150px}
+.modal{position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:9}
+.modal[hidden]{display:none}
+.box{background:var(--pn);border:2px solid var(--g);border-radius:10px;max-width:640px;width:92%;max-height:86%;overflow:auto;padding:16px;line-height:1.9}
+.box h3{color:var(--g);margin:0 0 6px}.box h5{color:var(--pl);margin:10px 0 2px;font-size:14px}
+kbd{background:#000;color:var(--g);border:1px solid var(--bd);border-radius:4px;padding:0 5px;font-family:Consolas,monospace;direction:ltr;display:inline-block}
+#tabs{position:absolute;top:8px;right:8px;z-index:3;display:flex;gap:4px}
+#tabs button{background:#0d0916e6}#tabs button.on{background:var(--pu);color:#fff;border-color:var(--g)}
+#nlp{position:absolute;top:44px;right:8px;z-index:3;width:350px;max-width:calc(100% - 16px);max-height:calc(100% - 56px);overflow:auto;background:#110d1cf5;border:1px solid var(--g);border-radius:10px;padding:10px;line-height:1.7}
+#nlp[hidden]{display:none}#nlp b{color:var(--g)}
+#nlt{width:100%;background:#000;color:var(--t);border:1px solid var(--g);border-radius:6px;padding:6px;font:13px Tahoma,sans-serif;resize:vertical;margin:6px 0}
+#nlo div{font-size:12px}#nlo .ok{color:#8ee6a0}#nlo .er{color:#ff9a9a}
+#nlx{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}#nlx button{font-size:11px}
+#nlp small{color:#b9aedd;display:block;margin-top:6px}
+@media(max-width:640px){#app{grid-template:"h h" auto "c c" 1fr "t l" auto "f f" auto/1fr 1fr}#tb{flex-direction:row;border:0}#tb button{min-width:50px}aside{max-height:110px}}
+</style></head><body>
+<div id="app">
+<header><b class="logo">◈ نقشه‌کش مدرسه</b>
+<button data-a="new">جدید</button><button data-a="open">باز کردن</button><button data-a="save">ذخیره</button>
+<button data-a="png">PNG</button><button data-a="svg">SVG</button><button data-a="dxf">DXF</button><button data-a="print">چاپ</button>
+<button data-a="undo">↶ واگرد</button><button data-a="redo">↷ ازنو</button><button data-a="fit">⤢ نمایش همه</button><button data-a="help">؟ راهنما</button></header>
+<nav id="tb"></nav>
+<main><canvas id="cv"></canvas>
+<div id="tabs"><button id="tm" class="on">✎ رسم دستی</button><button id="tn">✦ رسم با دستور</button></div>
+<div id="nlp" hidden><b>با جملهٔ فارسی نقشه بکشید</b>
+<textarea id="nlt" rows="7" placeholder="مثلاً:&#10;مستطیل 200 در 100 از نقطه 0,0&#10;دایره‌ای به شعاع 30 در مرکز 100,50"></textarea>
+<button id="nlr" class="on">▶ اجرا (Ctrl+Enter)</button> <button id="nlc">پاک‌کردن متن</button>
+<div id="nlo"></div><small>نمونه‌ها (کلیک کنید):</small><div id="nlx"></div>
+<small>هر دستور در یک خط یا جدا با «،» یا «سپس». مختصات را بدون فاصله بنویسید: 100,50 — ارقام فارسی هم قبول است. نقطهٔ جاری بین اجراها حفظ می‌شود.</small></div></main>
+<aside><h4>لایه‌ها</h4><div id="ly"></div>
+<button data-a="addL">+ لایه</button> <button data-a="mvL" title="اشیاء انتخاب‌شده به لایهٔ جاری بروند">انتقال به لایهٔ جاری</button>
+<div id="info"></div></aside>
+<footer><div id="log"></div>
+<div id="cl"><span style="color:var(--g)">فرمان:</span><input id="cmd" autocomplete="off" spellcheck="false" placeholder="L ، C ، REC ، 100,50 ، @30&lt;45 ، 25"></div>
+<div id="st"><span id="xy">0,0</span>
+<button data-a="tg_s">شبکه‌گیر F9</button><button data-a="tg_g">شبکه F7</button><button data-a="tg_r">افقی/عمودی F8</button><button data-a="tg_o">گیر اشیاء F3</button><span id="zm" style="margin-right:auto;direction:ltr"></span></div></footer>
+</div>
+<div id="hp" class="modal" hidden><div class="box" id="hb"></div></div>
+<input type="file" id="fi" accept=".json,.cad.json" hidden>
+<script>
+"use strict";
+const $=s=>document.querySelector(s),cv=$('#cv'),cx=cv.getContext('2d'),cmd=$('#cmd');
+const KEY='cadSchoolV1',fmt=n=>(+n.toFixed(2)).toString(),dg=Math.PI/180;
+const fn=t=>t.replace(/[۰-۹]/g,c=>c.charCodeAt(0)-1776).replace(/[٠-٩]/g,c=>c.charCodeAt(0)-1632).replace(/٫/g,'.').replace(/[−–]/g,'-').replace(/٬/g,'');
+const TOOLS=[['sel','⬚','انتخاب'],['line','╱','خط'],['pl','⌇','چندخطی'],['rect','▭','مستطیل'],['circle','◯','دایره'],['text','T','متن'],['dim','↔','اندازه'],['move','✥','جابجایی'],['copy','⧉','کپی'],['rot','⟳','دوران'],['mir','⇋','قرینه'],['scl','⤡','مقیاس'],['off','≣','موازی'],['del','✕','حذف'],['pan','✋','پن']];
+const ALIAS={l:'line',line:'line',pl:'pl',pline:'pl',rec:'rect',rect:'rect',c:'circle',circle:'circle',t:'text',text:'text',dim:'dim',d:'dim',m:'move',move:'move',co:'copy',cp:'copy',copy:'copy',ro:'rot',rotate:'rot',mi:'mir',mirror:'mir',sc:'scl',scale:'scl',of:'off',offset:'off',e:'del',erase:'del',del:'del',p:'pan',pan:'pan',sel:'sel',s:'sel'};
+const HINT={sel:['اشیاء را با کلیک یا کادر انتخاب کنید (Shift = افزودن)'],line:['نقطهٔ شروع','نقطهٔ بعدی  |  Esc = پایان'],pl:['نقطهٔ شروع','نقطهٔ بعدی  |  Enter = پایان  |  کلیک روی نقطهٔ اول = بستن'],rect:['گوشهٔ اول','گوشهٔ مقابل (یا @عرض,ارتفاع)'],circle:['مرکز دایره','شعاع: کلیک یا عدد'],text:['محل متن را کلیک کنید'],dim:['نقطهٔ اول','نقطهٔ دوم','محل خط اندازه را کلیک کنید'],move:['نقطهٔ مبنا','نقطهٔ مقصد'],copy:['نقطهٔ مبنا','نقطهٔ مقصد  |  Esc = پایان'],rot:['مرکز دوران','زاویه: کلیک یا عدد (درجه)'],mir:['نقطهٔ اول محور قرینه','نقطهٔ دوم محور (نسخهٔ قرینه ساخته می‌شود)'],scl:['نقطهٔ مبنا؛ سپس ضریب پرسیده می‌شود'],off:['شیء را کلیک کنید (فاصله پرسیده می‌شود)','سمت موازی را کلیک کنید'],pan:['برای جابجایی نما بکشید']};
+const NEED={line:2,rect:2,circle:2,dim:3,text:1,move:2,copy:2,rot:2,mir:2,scl:1,off:1},SELT=['move','copy','rot','mir','scl'];
+const defS=()=>({shapes:[],layers:[{n:'پیش‌فرض',c:'#ffffff',v:1},{n:'دیوار',c:'#d4af37',v:1},{n:'ابعاد',c:'#b266ff',v:1},{n:'متن',c:'#7fdcff',v:1}],cur:1});
+let S=defS(),V={x:80,y:400,z:3},W=0,H=0,tool='sel',pts=[],sel=new Set(),hist=[],redo=[],m={x:0,y:0},op={s:1,g:1,r:0,o:1},pan=null,box=null,space=false,X=0,offS=null,offD=0,nlCur=[0,0],rq=0,tp=null,pz=null;
+const ptrs=new Map(),dr=()=>{rq||(rq=requestAnimationFrame(()=>{rq=0;draw()}))};
+const w2s=p=>[p[0]*V.z+V.x,V.y-p[1]*V.z],s2w=(x,y)=>[(x-V.x)/V.z,(V.y-y)/V.z];
+const D=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]),clz=z=>Math.max(.01,Math.min(500,z));
+function sd(a,b,x,y){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let t=l?((x-a[0])*dx+(y-a[1])*dy)/l:0;t=Math.max(0,Math.min(1,t));return Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy)}
+/* ---------- اعتبارسنجی ---------- */
+const okP=q=>Array.isArray(q)&&q.length==2&&isFinite(q[0])&&isFinite(q[1]);
+function chk(d){if(!d||!Array.isArray(d.shapes)||!Array.isArray(d.layers)||!d.layers.length)return null;
+ d.layers=d.layers.map(L=>({n:String(L&&L.n||'لایه'),c:/^#[0-9a-f]{6}$/i.test(L&&L.c)?L.c:'#ffffff',v:(L&&L.v===0)?0:1}));
+ d.shapes=d.shapes.filter(s=>s&&['pl','c','t','d'].includes(s.t)&&Array.isArray(s.p)&&s.p.length&&s.p.every(okP)&&(s.t!='c'||isFinite(s.r))&&(s.t!='t'||(typeof s.s=='string'&&isFinite(s.h)))&&(s.t!='d'||(s.p.length==2&&isFinite(s.o)&&isFinite(s.h)))&&(s.t!='pl'||s.p.length>1));
+ d.shapes.forEach(s=>{if(!(Number.isInteger(s.l)&&s.l>=0&&s.l<d.layers.length))s.l=0});
+ if(!(Number.isInteger(d.cur)&&d.cur>=0&&d.cur<d.layers.length))d.cur=0;return d}
+/* ---------- هندسه ---------- */
+function prims(s){const p=s.p;
+ if(s.t=='pl')return[{k:'L',p,cl:s.cl}];
+ if(s.t=='c')return[{k:'C',p:p[0],r:s.r}];
+ if(s.t=='t')return[{k:'T',p:p[0],s:s.s,h:s.h,a:s.a||0}];
+ const[a,b]=p,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1e-9,ux=dx/L,uy=dy/L,nx=-uy,ny=ux,o=s.o,h=s.h,A=[a[0]+nx*o,a[1]+ny*o],B=[b[0]+nx*o,b[1]+ny*o],e=(o<0?-1:1)*h*.4,ar=h*.8,q=[];
+ q.push({k:'L',p:[a,[A[0]+nx*e,A[1]+ny*e]]},{k:'L',p:[b,[B[0]+nx*e,B[1]+ny*e]]},{k:'L',p:[A,B]});
+ for(const[T,sg]of[[A,1],[B,-1]]){const bx=T[0]+sg*ux*ar,by=T[1]+sg*uy*ar;q.push({k:'L',p:[T,[bx+nx*ar*.3,by+ny*ar*.3]]},{k:'L',p:[T,[bx-nx*ar*.3,by-ny*ar*.3]]})}
+ let an=Math.atan2(dy,dx);if(an>Math.PI/2||an<=-Math.PI/2)an+=Math.PI;
+ q.push({k:'T',p:[(A[0]+B[0])/2-Math.sin(an)*h*.3,(A[1]+B[1])/2+Math.cos(an)*h*.3],s:fmt(L),h,a:an,al:'center'});return q}
+function kp(s){const r=[];if(s.t=='d'){s.p.forEach(p=>r.push({x:p[0],y:p[1],n:'انتها'}));return r}
+ for(const q of prims(s)){if(q.k=='L'){const P=q.cl?[...q.p,q.p[0]]:q.p;P.forEach((a,i)=>{r.push({x:a[0],y:a[1],n:'انتها'});if(i)r.push({x:(a[0]+P[i-1][0])/2,y:(a[1]+P[i-1][1])/2,n:'وسط'})})}
+ else if(q.k=='C'){r.push({x:q.p[0],y:q.p[1],n:'مرکز'});[[1,0],[0,1],[-1,0],[0,-1]].forEach(d=>r.push({x:q.p[0]+d[0]*q.r,y:q.p[1]+d[1]*q.r,n:'ربع'}))}
+ else r.push({x:q.p[0],y:q.p[1],n:'درج'})}return r}
+function dist(s,x,y){let r=1e9;for(const q of prims(s)){
+ if(q.k=='L'){const P=q.cl?[...q.p,q.p[0]]:q.p;for(let i=1;i<P.length;i++)r=Math.min(r,sd(P[i-1],P[i],x,y))}
+ else if(q.k=='C')r=Math.min(r,Math.abs(Math.hypot(x-q.p[0],y-q.p[1])-q.r));
+ else{const w=q.s.length*q.h*.6,x0=q.p[0]-(q.al=='center'?w/2:0);r=Math.min(r,Math.hypot(Math.max(x0-x,0,x-x0-w),Math.max(q.p[1]-q.h*.2-y,0,y-q.p[1]-q.h)))}}return r}
+function segBox(a,b,x0,y0,x1,y1){let t0=0,t1=1;const dx=b[0]-a[0],dy=b[1]-a[1];
+ for(const[p,q]of[[-dx,a[0]-x0],[dx,x1-a[0]],[-dy,a[1]-y0],[dy,y1-a[1]]]){if(p==0){if(q<0)return 0}else{const r=q/p;if(p<0){if(r>t1)return 0;if(r>t0)t0=r}else{if(r<t0)return 0;if(r<t1)t1=r}}}return 1}
+function hitBox(s,x0,y0,x1,y1){const In=(x,y)=>x>=x0&&x<=x1&&y>=y0&&y<=y1;
+ for(const q of prims(s)){if(q.k=='L'){const P=q.cl?[...q.p,q.p[0]]:q.p;if(P.some(a=>In(a[0],a[1])))return 1;for(let i=1;i<P.length;i++)if(segBox(P[i-1],P[i],x0,y0,x1,y1))return 1}
+ else if(q.k=='C'){const qx=Math.max(x0,Math.min(q.p[0],x1)),qy=Math.max(y0,Math.min(q.p[1],y1)),dn=Math.hypot(qx-q.p[0],qy-q.p[1]),df=Math.max(...[[x0,y0],[x1,y0],[x0,y1],[x1,y1]].map(c=>Math.hypot(c[0]-q.p[0],c[1]-q.p[1])));if(dn<=q.r&&df>=q.r)return 1}
+ else if(In(q.p[0],q.p[1]))return 1}return 0}
+function mk(T,P){const n=P.length,a=P[0],b=P[n-1],h=+(14/V.z).toPrecision(1),E=1e-9;
+ if(T=='line'&&n>1)return D(a,b)>E?{t:'pl',p:[a,b]}:null;
+ if(T=='pl'&&n>1)return{t:'pl',p:P.map(x=>x.slice())};
+ if(T=='rect'&&n>1)return Math.abs(b[0]-a[0])>E&&Math.abs(b[1]-a[1])>E?{t:'pl',cl:1,p:[a,[b[0],a[1]],b,[a[0],b[1]]]}:null;
+ if(T=='circle'&&n>1)return D(a,b)>E?{t:'c',p:[a],r:D(a,b)}:null;
+ if(T=='dim'&&n>1){if(n==2)return D(a,b)>E?{t:'pl',p:[a,b]}:null;const L=D(a,P[1]);if(L<E)return null;const nx=-(P[1][1]-a[1])/L,ny=(P[1][0]-a[0])/L;return{t:'d',p:[a,P[1]],o:(b[0]-a[0])*nx+(b[1]-a[1])*ny,h}}
+ return null}
+function tf(s,f,an){s.p=s.p.map(f);if(s.t=='t')s.a=(s.a||0)+(an||0)}
+const rot=(p,c,an)=>{const co=Math.cos(an),si=Math.sin(an),x=p[0]-c[0],y=p[1]-c[1];return[c[0]+x*co-y*si,c[1]+x*si+y*co]};
+function ap(s,T,a,b){let f,an=0,fl=0;
+ if(T=='rot'){an=Math.atan2(b[1]-a[1],b[0]-a[0]);f=q=>rot(q,a,an)}
+ else if(T=='mir'){const ux=b[0]-a[0],uy=b[1]-a[1],L2=ux*ux+uy*uy||1e-12;fl=1;f=q=>{const t=((q[0]-a[0])*ux+(q[1]-a[1])*uy)/L2;return[2*(a[0]+t*ux)-q[0],2*(a[1]+t*uy)-q[1]]}}
+ else f=q=>[q[0]+b[0]-a[0],q[1]+b[1]-a[1]];
+ tf(s,f,an);if(fl&&s.t=='d')s.o=-s.o;return s}
+function offPl(P,cl,d){const n=P.length,sg=cl?n:n-1,ls=[];
+ for(let i=0;i<sg;i++){const a=P[i],b=P[(i+1)%n],L=D(a,b)||1e-9,ux=(b[0]-a[0])/L,uy=(b[1]-a[1])/L,nx=-uy*d,ny=ux*d;ls.push({a:[a[0]+nx,a[1]+ny],u:[ux,uy],n:[nx,ny]})}
+ const I=(l1,l2)=>{const c=l1.u[0]*l2.u[1]-l1.u[1]*l2.u[0];if(Math.abs(c)<1e-9)return[l2.a[0],l2.a[1]];const t=((l2.a[0]-l1.a[0])*l2.u[1]-(l2.a[1]-l1.a[1])*l2.u[0])/c;return[l1.a[0]+l1.u[0]*t,l1.a[1]+l1.u[1]*t]},o=[];
+ if(cl){for(let i=0;i<n;i++)o.push(I(ls[(i+n-1)%n],ls[i]))}
+ else{o.push([ls[0].a[0],ls[0].a[1]]);for(let i=1;i<n-1;i++)o.push(I(ls[i-1],ls[i]));const l=ls[n-2],b=P[n-1];o.push([b[0]+l.n[0],b[1]+l.n[1]])}
+ return o}
+/* ---------- وضعیت و تاریخچه ---------- */
+function snap_(){hist.push(JSON.stringify(S));redo=[];if(hist.length>150)hist.shift()}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){msg('⚠ ذخیرهٔ خودکار انجام نشد؛ با دکمهٔ «ذخیره» فایل بگیرید')}}
+function add(sh){snap_();sh.l=S.cur;S.shapes.push(sh);persist()}
+function undo(){if(!hist.length)return msg('چیزی برای واگرد نیست');redo.push(JSON.stringify(S));S=JSON.parse(hist.pop());sel.clear();pts=[];persist();ui()}
+function redo_(){if(!redo.length)return;hist.push(JSON.stringify(S));S=JSON.parse(redo.pop());sel.clear();persist();ui()}
+function msg(t){$('#log').textContent=t}
+function numP(t){const v=parseFloat(fn(prompt(t)||''));return isFinite(v)&&v>0?v:null}
+function setTool(t){
+ if(SELT.includes(t)&&!sel.size){msg('ابتدا اشیاء را انتخاب کنید، سپس '+TOOLS.find(x=>x[0]==t)[2]+' را بزنید');t='sel'}
+ if(t=='del'){if(!sel.size)msg('چیزی انتخاب نشده');else{snap_();S.shapes=S.shapes.filter(s=>!sel.has(s));sel.clear();persist();msg('حذف شد')}t='sel'}
+ tool=t;pts=[];offS=null;ui()}
+function ui(){document.querySelectorAll('#tb button').forEach(b=>b.classList.toggle('on',b.dataset.t==tool));
+ [['tg_s','s'],['tg_g','g'],['tg_r','r'],['tg_o','o']].forEach(([a,k])=>document.querySelector(`[data-a=${a}]`).classList.toggle('on',!!op[k]));
+ const hs=HINT[tool];msg(hs[Math.min(offS?1:pts.length,hs.length-1)]);layers();info();draw()}
+function layers(){const el=$('#ly');el.innerHTML='';S.layers.forEach((L,i)=>{const d=document.createElement('div');d.className='ly'+(i==S.cur?' cur':'');
+ d.innerHTML='<input type=checkbox title="نمایش/پنهان"><input type=color><span></span>';
+ const[c,k,n]=d.children;c.checked=!!L.v;c.onchange=()=>{if(i==S.cur&&!c.checked){c.checked=true;return msg('لایهٔ جاری را نمی‌توان پنهان کرد')}L.v=c.checked?1:0;persist();draw()};k.value=L.c;k.oninput=()=>{L.c=k.value;persist();draw()};
+ n.textContent=L.n;n.onclick=()=>{S.cur=i;L.v=1;persist();layers();draw()};n.ondblclick=()=>{const v=prompt('نام لایه:',L.n);if(v){L.n=v;persist();layers()}};el.appendChild(d)})}
+const esc_=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function info(){const e=$('#info'),a=[...sel];if(!a.length){e.textContent='';return}if(a.length>1){e.textContent=a.length+' شیء انتخاب شده';return}
+ const s=a[0];let t='';if(s.t=='c')t=`دایره<br>شعاع: ${fmt(s.r)}<br>محیط: ${fmt(2*Math.PI*s.r)}<br>مساحت: ${fmt(Math.PI*s.r*s.r)}`;
+ else if(s.t=='pl'){let L=0,P=s.cl?[...s.p,s.p[0]]:s.p;for(let i=1;i<P.length;i++)L+=D(P[i-1],P[i]);t=`${s.cl?'چندضلعی بسته':'خط'}<br>طول: ${fmt(L)}`;
+  if(s.cl){let A=0;s.p.forEach((p,i)=>{const q=s.p[(i+1)%s.p.length];A+=p[0]*q[1]-q[0]*p[1]});t+=`<br>مساحت: ${fmt(Math.abs(A)/2)}`}
+  else if(s.p.length==2)t+=`<br>زاویه: ${fmt(Math.atan2(s.p[1][1]-s.p[0][1],s.p[1][0]-s.p[0][0])/dg)}°`}
+ else t=s.t=='t'?'متن: '+esc_(s.s):'اندازه: '+fmt(D(s.p[0],s.p[1]));e.innerHTML=t}
+/* ---------- رسم ---------- */
+function grid(){let st=[1,2,5,10,20,50,100,200,500,1e3,2e3,5e3,1e4,1e5].find(x=>x*V.z>=14)||1e5;grid.st=st;if(!op.g)return;
+ const a=s2w(0,H),b=s2w(W,0);cx.lineWidth=1;
+ for(let k=Math.floor(a[0]/st);k<=Math.ceil(b[0]/st);k++){const x=Math.round(k*st*V.z+V.x)+.5;cx.strokeStyle=k%5?'#16111f':'#262040';cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke()}
+ for(let k=Math.floor(a[1]/st);k<=Math.ceil(b[1]/st);k++){const y=Math.round(V.y-k*st*V.z)+.5;cx.strokeStyle=k%5?'#16111f':'#262040';cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke()}}
+function drawS(s,col,hl,dash){cx.strokeStyle=cx.fillStyle=hl?'#c77dff':col;cx.lineWidth=hl?2.4:1.4;cx.setLineDash(dash?[6,4]:[]);
+ for(const q of prims(s)){
+  if(q.k=='L'){cx.beginPath();q.p.forEach((a,i)=>{const[x,y]=w2s(a);i?cx.lineTo(x,y):cx.moveTo(x,y)});if(q.cl)cx.closePath();cx.stroke()}
+  else if(q.k=='C'){const[x,y]=w2s(q.p);cx.beginPath();cx.arc(x,y,Math.max(q.r*V.z,.1),0,7);cx.stroke()}
+  else{const f=q.h*V.z;if(f<3)continue;const[x,y]=w2s(q.p);cx.save();cx.translate(x,y);cx.rotate(-q.a);cx.font=f+'px Tahoma,sans-serif';cx.textAlign=q.al||'left';cx.direction=/[\u0600-\u06FF]/.test(q.s)?'rtl':'ltr';cx.fillText(q.s,0,0);cx.restore()}}cx.setLineDash([])}
+function draw(){cx.clearRect(0,0,W,H);
+ if(X){cx.fillStyle='#06050a';cx.fillRect(0,0,W,H)}else{grid();cx.strokeStyle='#6b5410';cx.lineWidth=1;cx.beginPath();cx.moveTo(0,V.y+.5);cx.lineTo(W,V.y+.5);cx.moveTo(V.x+.5,0);cx.lineTo(V.x+.5,H);cx.stroke()}
+ for(const s of S.shapes){const L=S.layers[s.l];if(L&&L.v)drawS(s,L.c,!X&&sel.has(s))}
+ if(X)return;
+ const P=[...pts,[m.x,m.y]];
+ if(pts.length){if(['move','copy','rot','mir'].includes(tool)){const a=pts[0];for(const s of sel)drawS(ap(JSON.parse(JSON.stringify(s)),tool,a,[m.x,m.y]),'#d4af37',0,1)}
+  else{const pv=mk(tool,P);if(pv)drawS(pv,'#d4af37',0,1)}}
+ if(box){cx.strokeStyle='#8b3fd9';cx.fillStyle='#8b3fd922';const x=box.x0,y=box.y0;cx.setLineDash([4,3]);cx.strokeRect(x,y,box.x1-x,box.y1-y);cx.fillRect(x,y,box.x1-x,box.y1-y);cx.setLineDash([])}
+ const[sx,sy]=w2s([m.x,m.y]);
+ if(m.n){cx.strokeStyle='#d4af37';cx.lineWidth=2;cx.strokeRect(sx-6,sy-6,12,12);cx.fillStyle='#d4af37';cx.font='11px Tahoma';cx.textAlign='left';cx.direction='ltr';cx.fillText(m.n,sx+10,sy-8)}
+ if(!matchMedia('(pointer:coarse)').matches){cx.strokeStyle='#8b3fd980';cx.lineWidth=1;cx.beginPath();cx.moveTo(sx-14,sy);cx.lineTo(sx+14,sy);cx.moveTo(sx,sy-14);cx.lineTo(sx,sy+14);cx.stroke()}
+ $('#zm').textContent='1 واحد = '+fmt(V.z)+'px | گام شبکه '+grid.st;
+ $('#xy').textContent=fmt(m.x)+' , '+fmt(m.y)+(pts.length?`   L=${fmt(D(pts[pts.length-1],[m.x,m.y]))} ∠${fmt(Math.atan2(m.y-pts[pts.length-1][1],m.x-pts[pts.length-1][0])/dg)}°`:'')}
+/* ---------- گیر (Snap) ---------- */
+const ORT=['line','pl','move','copy','mir'];
+function snapAt(sx,sy){let[x,y]=s2w(sx,sy),best=12/V.z,r=null;
+ if(op.o&&tool!='pan')for(const s of S.shapes){const L=S.layers[s.l];if(!L||!L.v)continue;for(const k of kp(s)){const d=Math.hypot(k.x-x,k.y-y);if(d<best){best=d;r=k}}}
+ if(r)return r;const l=pts[pts.length-1],st=grid.st||1;
+ if(op.r&&l&&(ORT.includes(tool)||(tool=='dim'&&pts.length<2))){if(Math.abs(x-l[0])>Math.abs(y-l[1]))y=l[1];else x=l[0]}
+ if(op.s){x=Math.round(x/st)*st;y=Math.round(y/st)*st}
+ return{x,y}}
+/* ---------- کلیک و ابزارها ---------- */
+function pick(x,y){let hit=null,bd=7/V.z;for(const s of S.shapes){const L=S.layers[s.l];if(!L||!L.v)continue;const d=dist(s,x,y);if(d<bd){bd=d;hit=s}}return hit}
+function offClick(p){
+ if(!offS){const h=pick(p[0],p[1]);if(!h||h.t=='t'||h.t=='d'){msg('یک خط، چندخطی یا دایره را کلیک کنید');return}const d=numP('فاصلهٔ موازی:');if(!d)return;offS=h;offD=d;return ui()}
+ const s=offS;offS=null;let n;
+ if(s.t=='c'){const r=s.r+(D(p,s.p[0])>s.r?offD:-offD);if(r<=0){msg('شعاع نامعتبر');return ui()}n={t:'c',p:[s.p[0]],r}}
+ else{const P=s.cl?[...s.p,s.p[0]]:s.p;let bi=1,bd=1e9;for(let i=1;i<P.length;i++){const d=sd(P[i-1],P[i],p[0],p[1]);if(d<bd){bd=d;bi=i}}
+  const a=P[bi-1],b=P[bi],sg=((b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]))>0?1:-1;n={t:'pl',p:offPl(s.p,!!s.cl,sg*offD)};if(s.cl)n.cl=1}
+ add(n);ui()}
+function click(p){const T=tool;if(T=='sel'||T=='pan')return;
+ if(T=='off')return offClick(p);
+ if(T=='pl'&&pts.length>2&&D(p,pts[0])<1e-6){const sh=mk('pl',pts);sh.cl=1;add(sh);pts=[];return ui()}
+ pts.push(p);const n=pts.length;
+ if(T=='text'){const s=prompt('متن را بنویسید:');if(s)add({t:'t',p:[p],s,h:+(14/V.z).toPrecision(1)*1.2});pts=[]}
+ else if(T=='scl'){const k=numP('ضریب مقیاس (مثلاً 2 یا 0.5):');pts=[];if(k){snap_();sel.forEach(s=>{s.p=s.p.map(q=>[p[0]+(q[0]-p[0])*k,p[1]+(q[1]-p[1])*k]);if(s.t=='c')s.r*=k;if(s.t=='t'||s.t=='d')s.h*=k;if(s.t=='d')s.o*=k});persist()}}
+ else if(NEED[T]&&n>=NEED[T]){
+  if(T=='line'){const sh=mk(T,pts);if(sh){add(sh);pts=[p]}else{pts.pop();msg('نقطهٔ تکراری')}}
+  else if(['move','copy','rot','mir'].includes(T)){const a=pts[0];
+   if(T=='mir'&&D(a,p)<1e-9){pts.pop();return}
+   snap_();if(T=='move'||T=='rot')sel.forEach(s=>ap(s,T,a,p));else{const c=[];sel.forEach(s=>c.push(ap(JSON.parse(JSON.stringify(s)),T,a,p)));S.shapes.push(...c)}persist();pts=T=='copy'?[a]:[]}
+  else{const sh=mk(T,pts);if(sh){add(sh);pts=[]}else{pts.pop();msg('شکل بی‌اندازه رد شد')}}}
+ ui()}
+function finish(){if(tool=='pl'&&pts.length>1)add(mk('pl',pts));pts=[];ui()}
+function esc(){if(pts.length||offS){pts=[];offS=null}else{sel.clear();tool='sel'}ui()}
+/* ---------- ورودی ماوس/لمس ---------- */
+function pos(e){const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
+cv.addEventListener('contextmenu',e=>{e.preventDefault();if(pts.length)finish()});
+function press(e,x,y){
+ if(e.button==1||tool=='pan'||space){pan={x,y,vx:V.x,vy:V.y};return}
+ if(e.button!=0)return;const p=snapAt(x,y);m=p;
+ if(tool=='sel'){const w=s2w(x,y),hit=pick(w[0],w[1]);
+  if(hit){if(e.shiftKey||e.tap)sel.has(hit)?sel.delete(hit):sel.add(hit);else{sel.clear();sel.add(hit)}ui()}
+  else{if(!e.shiftKey)sel.clear();if(!e.tap)box={x0:x,y0:y,x1:x,y1:y};ui()}return}
+ click([p.x,p.y])}
+function pinch0(){const[a,b]=[...ptrs.values()],c=[(a[0]+b[0])/2,(a[1]+b[1])/2];pz={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,z:V.z,w:s2w(c[0],c[1])}}
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const q=pos(e);cmd.blur();
+ if(e.pointerType=='touch'){ptrs.set(e.pointerId,q);if(ptrs.size==1)tp={x:q[0],y:q[1],vx:V.x,vy:V.y,mv:0};else{tp=null;if(ptrs.size==2)pinch0()}return}
+ press(e,q[0],q[1])});
+cv.addEventListener('pointermove',e=>{const q=pos(e);
+ if(e.pointerType=='touch'){if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,q);
+  if(ptrs.size>1&&pz){const[a,b]=[...ptrs.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1])||1,c=[(a[0]+b[0])/2,(a[1]+b[1])/2];V.z=clz(pz.z*d/pz.d);V.x=c[0]-pz.w[0]*V.z;V.y=c[1]+pz.w[1]*V.z;dr()}
+  else if(tp){const dx=q[0]-tp.x,dy=q[1]-tp.y;if(tp.mv||Math.hypot(dx,dy)>10){tp.mv=1;V.x=tp.vx+dx;V.y=tp.vy+dy;dr()}}return}
+ if(pan){V.x=pan.vx+q[0]-pan.x;V.y=pan.vy+q[1]-pan.y;dr();return}
+ if(box){box.x1=q[0];box.y1=q[1]}m=snapAt(q[0],q[1]);dr()});
+const up=e=>{
+ if(e.pointerType=='touch'){ptrs.delete(e.pointerId);if(tp&&e.type=='pointerup'&&!tp.mv&&!ptrs.size){const t=tp;press({button:0,tap:1,shiftKey:false},t.x,t.y);pan=null}if(!ptrs.size)tp=null;if(ptrs.size<2)pz=null;return}
+ pan=null;if(box){const[ax,ay]=s2w(Math.min(box.x0,box.x1),Math.max(box.y0,box.y1)),[bx,by]=s2w(Math.max(box.x0,box.x1),Math.min(box.y0,box.y1)),win=box.x1>=box.x0;
+ if(Math.abs(box.x1-box.x0)>4||Math.abs(box.y1-box.y0)>4)for(const s of S.shapes){const L=S.layers[s.l];if(!L||!L.v)continue;const f=q=>q.x>=ax&&q.x<=bx&&q.y>=ay&&q.y<=by;if(win?kp(s).every(f):hitBox(s,ax,ay,bx,by))sel.add(s)}box=null;ui()}};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault();const[x,y]=pos(e),w=s2w(x,y),f=e.deltaY<0?1.15:1/1.15;V.z=clz(V.z*f);V.x=x-w[0]*V.z;V.y=y+w[1]*V.z;m=snapAt(x,y);dr()},{passive:false});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b&&e.detail)b.blur()});
+/* ---------- خط فرمان ---------- */
+const NR='(-?\\d+(?:\\.\\d+)?|-?\\.\\d+)',R1=new RegExp('^'+NR+','+NR+'$'),R2=new RegExp('^'+NR+'<'+NR+'$'),R3=new RegExp('^'+NR+'$');
+function parsePt(str){const l=pts[pts.length-1],s=fn(str).replace(/\s/g,''),rel=s[0]=='@',t=rel?s.slice(1):s;let r,o=null;
+ if(r=t.match(R1)){const b=rel&&l?l:[0,0];o=[b[0]+ +r[1],b[1]+ +r[2]]}
+ else if(r=t.match(R2)){const b=l||[0,0],d=+r[1],an=+r[2]*dg;o=[b[0]+d*Math.cos(an),b[1]+d*Math.sin(an)]}
+ else if(l&&R3.test(t)){const v=+t;if(tool=='rot')o=[l[0]+Math.cos(v*dg),l[1]+Math.sin(v*dg)];else{const dx=m.x-l[0],dy=m.y-l[1],L=Math.hypot(dx,dy)||1;o=[l[0]+v*dx/L,l[1]+v*dy/L]}}
+ return o&&isFinite(o[0])&&isFinite(o[1])?o:null}
+function run(str){str=str.trim();if(!str)return pts.length?finish():null;const k=str.toLowerCase();
+ const A={u:undo,undo,redo:redo_,z:fit,ze:fit,zoom:fit,g:()=>act.tg_g(),o:()=>act.tg_r(),sn:()=>act.tg_s(),os:()=>act.tg_o(),h:help,help,'?':help,new:act.new,save:act.save,open:act.open,svg:act.svg,png:act.png,dxf:act.dxf,print:act.print,all:()=>{S.shapes.forEach(s=>sel.add(s));ui()}};
+ if(ALIAS[k]){setTool(ALIAS[k]);return}if(A[k]){A[k]();return}
+ const p=(NEED[tool]||tool=='pl')?parsePt(str):null;if(p){click(p);return}msg('فرمان یا مختصات نامعتبر: '+str)}
+cmd.addEventListener('keydown',e=>{if(e.key=='Enter'){run(cmd.value);cmd.value=''}else if(e.key=='Escape'){cmd.value='';cmd.blur();esc()}});
+document.addEventListener('keydown',e=>{const k=e.key;
+ if(/^F[3789]$/.test(k)){e.preventDefault();act[{F3:'tg_o',F7:'tg_g',F8:'tg_r',F9:'tg_s'}[k]]();return}
+ if(e.target==cmd||e.target.id=='nlt')return;
+ if(k=='Escape'){if(!$('#hp').hidden)$('#hp').hidden=true;else esc()}
+ else if(k=='Enter'){pts.length?finish():0}
+ else if(k=='Delete')setTool('del');
+ else if(k==' '){space=true;e.preventDefault()}
+ else if((e.ctrlKey||e.metaKey)&&k.toLowerCase()=='z'){e.preventDefault();undo()}
+ else if((e.ctrlKey||e.metaKey)&&k.toLowerCase()=='y'){e.preventDefault();redo_()}
+ else if((e.ctrlKey||e.metaKey)&&k.toLowerCase()=='a'){e.preventDefault();run('all')}
+ else if(k.length==1&&!e.ctrlKey&&!e.metaKey&&!e.altKey)cmd.focus()});
+document.addEventListener('keyup',e=>{if(e.key==' ')space=false});
+/* ---------- خروجی‌ها ---------- */
+function bounds(){let a=[1e18,1e18,-1e18,-1e18];const u=(x,y)=>{a=[Math.min(a[0],x),Math.min(a[1],y),Math.max(a[2],x),Math.max(a[3],y)]};
+ for(const s of S.shapes){const L=S.layers[s.l];if(!L||!L.v)continue;for(const q of prims(s)){if(q.k=='L')q.p.forEach(p=>u(p[0],p[1]));else if(q.k=='C'){u(q.p[0]-q.r,q.p[1]-q.r);u(q.p[0]+q.r,q.p[1]+q.r)}else{u(q.p[0],q.p[1]);u(q.p[0]+q.s.length*q.h*.6,q.p[1]+q.h)}}}return a[0]>a[2]?null:a}
+function fit(){const b=bounds();if(!b){V={x:80,y:H-80,z:3};return draw()}const w=b[2]-b[0]||1,h=b[3]-b[1]||1;V.z=clz(Math.min(Math.max(W-80,40)/w,Math.max(H-80,40)/h));V.x=(W-w*V.z)/2-b[0]*V.z;V.y=(H+h*V.z)/2+b[1]*V.z;draw()}
+function dl(name,data,type){const a=document.createElement('a');a.href=data.startsWith('data:')?data:URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
+function toSVG(pr){const b=bounds();if(!b){msg('نقشه خالی است');return null}const pd=10,o=[];
+ for(const s of S.shapes){const L=S.layers[s.l];if(!L||!L.v)continue;const c=pr?'#000':L.c;
+  for(const q of prims(s)){if(q.k=='L')o.push(`<${q.cl?'polygon':'polyline'} points="${q.p.map(p=>p[0]+','+-p[1]).join(' ')}" fill="none" stroke="${c}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`);
+  else if(q.k=='C')o.push(`<circle cx="${q.p[0]}" cy="${-q.p[1]}" r="${q.r}" fill="none" stroke="${c}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`);
+  else o.push(`<text x="${q.p[0]}" y="${-q.p[1]}" font-size="${q.h}" fill="${c}" font-family="Tahoma,sans-serif" text-anchor="${q.al=='center'?'middle':'start'}" transform="rotate(${-q.a/dg} ${q.p[0]} ${-q.p[1]})">${esc_(q.s)}</text>`)}}
+ return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${b[0]-pd} ${-b[3]-pd} ${b[2]-b[0]+2*pd} ${b[3]-b[1]+2*pd}"><rect x="${b[0]-pd}" y="${-b[3]-pd}" width="100%" height="100%" fill="${pr?'#fff':'#06050a'}"/>${o.join('')}</svg>`}
+const dxT=t=>String(t).replace(/[^\x20-\x7e]/g,c=>'\\U+'+c.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0'));
+function toDXF(){const o=['0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nSECTION\n2\nENTITIES'];
+ for(const s of S.shapes){const L=S.layers[s.l];if(!L||!L.v)continue;const ly=L.n.replace(/[^A-Za-z0-9_]/g,'')||'L'+s.l;
+  for(const q of prims(s)){if(q.k=='L')o.push(`0\nLWPOLYLINE\n8\n${ly}\n90\n${q.p.length}\n70\n${q.cl?1:0}\n`+q.p.map(p=>`10\n${p[0]}\n20\n${p[1]}`).join('\n'));
+  else if(q.k=='C')o.push(`0\nCIRCLE\n8\n${ly}\n10\n${q.p[0]}\n20\n${q.p[1]}\n30\n0\n40\n${q.r}`);
+  else o.push(`0\nTEXT\n8\n${ly}\n10\n${q.p[0]}\n20\n${q.p[1]}\n30\n0\n40\n${q.h}\n1\n${dxT(q.s)}\n50\n${q.a/dg}`)}}
+ o.push('0\nENDSEC\n0\nEOF');return o.join('\n')}
+const act={
+ new(){if(!S.shapes.length||confirm('نقشهٔ فعلی پاک شود؟')){snap_();S=defS();sel.clear();pts=[];nlCur=[0,0];persist();fit();ui()}},
+ open(){$('#fi').click()},save(){dl('naghshe.cad.json',JSON.stringify(S),'application/json')},
+ png(){if(!bounds())return msg('نقشه خالی است');const v0={...V};fit();X=1;draw();const u=cv.toDataURL('image/png');X=0;V=v0;draw();dl('naghshe.png',u)},
+ svg(){const s=toSVG(0);if(s)dl('naghshe.svg',s,'image/svg+xml')},
+ dxf(){if(!S.shapes.length)return msg('نقشه خالی است');dl('naghshe.dxf',toDXF(),'application/dxf')},
+ print(){const s=toSVG(1);if(!s)return;const w=open('','_blank');if(!w)return msg('پنجرهٔ چاپ مسدود شد');w.document.write('<body style="margin:0">'+s.replace('<svg ','<svg style="width:100%;height:100vh" ')+'<script>onload=()=>print()<\/script>');w.document.close()},
+ undo,redo:redo_,fit,help,addL(){const n=prompt('نام لایهٔ جدید:');if(n){snap_();S.layers.push({n,c:'#'+(0x808080+(Math.random()*0x7f7f7f|0)).toString(16),v:1});S.cur=S.layers.length-1;persist();ui()}},
+ mvL(){if(!sel.size)return msg('ابتدا اشیاء را انتخاب کنید');snap_();sel.forEach(s=>s.l=S.cur);persist();draw();msg('به لایهٔ «'+S.layers[S.cur].n+'» منتقل شد')},
+ tg_s(){op.s^=1;ui()},tg_g(){op.g^=1;ui()},tg_r(){op.r^=1;ui()},tg_o(){op.o^=1;ui()}};
+document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act[b.dataset.a]());
+$('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=chk(JSON.parse(r.result));if(!d)throw 0;snap_();S=d;sel.clear();pts=[];persist();fit();ui()}catch(x){msg('فایل نامعتبر است')}};r.readAsText(f);e.target.value=''};
+$('#tb').innerHTML=TOOLS.map(t=>`<button data-t="${t[0]}" title="${t[2]}"><i>${t[1]}</i>${t[2]}</button>`).join('');
+document.querySelectorAll('#tb button').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
+function help(){$('#hb').innerHTML=`<h3>◈ راهنمای نقشه‌کش مدرسه</h3>
+<p>برنامهٔ دوبعدی ساده شبیه اتوکد. با ماوس/لمس یا تایپ فرمان رسم کنید. نقشه خودکار در همین مرورگر ذخیره می‌شود.</p>
+<h5>حرکت در نما</h5><p>ماوس: چرخ = زوم، دکمهٔ وسط یا <kbd>Space</kbd> = پن. لمس: یک انگشت بکشید = پن، دو انگشت = زوم و پن، ضربهٔ کوتاه = کلیک (در حالت انتخاب، ضربه روی چند شیء آن‌ها را اضافه/کم می‌کند).</p>
+<h5>فرمان‌ها (تایپ و Enter)</h5>
+<p><kbd>L</kbd> خط، <kbd>PL</kbd> چندخطی، <kbd>REC</kbd> مستطیل، <kbd>C</kbd> دایره، <kbd>T</kbd> متن، <kbd>DIM</kbd> اندازه، <kbd>M</kbd> جابجایی، <kbd>CO</kbd> کپی، <kbd>RO</kbd> دوران، <kbd>MI</kbd> قرینه، <kbd>SC</kbd> مقیاس، <kbd>OF</kbd> موازی، <kbd>E</kbd> حذف، <kbd>U</kbd> واگرد، <kbd>ZE</kbd> نمایش همه، <kbd>ALL</kbd> انتخاب همه</p>
+<h5>مختصات دقیق</h5>
+<p><kbd>100,50</kbd> مطلق | <kbd>@30,20</kbd> نسبی | <kbd>@50&lt;45</kbd> طول و زاویه (نسبت به نقطهٔ قبل) | <kbd>25</kbd> طول ۲۵ در جهت ماوس (دایره = شعاع، دوران = زاویه)</p>
+<h5>ویرایش</h5><p>ابتدا انتخاب کنید (کادر چپ‌به‌راست = کاملاً داخل، راست‌به‌چپ = هر برخورد). سپس: <b>قرینه</b> دو نقطهٔ محور می‌گیرد و نسخهٔ قرینه می‌سازد؛ <b>مقیاس</b> نقطهٔ مبنا و ضریب؛ <b>موازی</b> ابتدا شیء، فاصله، سپس سمت. <kbd>Delete</kbd> حذف، <kbd>Ctrl+Z</kbd> واگرد.</p>
+<h5>گیرها</h5><p>گیر اشیاء <kbd>F3</kbd>، شبکه‌گیر <kbd>F9</kbd>، افقی/عمودی <kbd>F8</kbd>، شبکه <kbd>F7</kbd>.</p>
+<h5>لایه‌ها و خروجی</h5><p>کلیک روی نام لایه = جاری، دوبار کلیک = تغییر نام. خروجی: ذخیره، PNG، SVG، DXF (متن فارسی به‌صورت کد یونیکد) و چاپ سیاه‌وسفید.</p>
+<button onclick="$('#hp').hidden=true" class="on">متوجه شدم</button>`;$('#hp').hidden=false}
+$('#hp').onclick=e=>{if(e.target.id=='hp')e.target.hidden=true};
+/* ---------- تب رسم با دستور طبیعی ---------- */
+const NLX=[['خانهٔ ساده','از 0,0 شروع کن\n100 به راست خط بکش\n60 بالا خط بکش\n100 به چپ خط بکش\n60 پایین خط بکش\nمتن «اتاق» در 40,25\nاندازه از 0,0 تا 100,0'],
+['مستطیل و دایره','مستطیل 200 در 100 از نقطه 0,0\nدایره‌ای به شعاع 30 در مرکز 100,50'],
+['خط با زاویه','خط به طول 80 با زاویه 30 از 0,0\nخط از 0,0 به 100,50'],
+['شش‌ضلعی','شش‌ضلعی منتظم با شعاع 40 در مرکز 0,0\nلایه دیوار را فعال کن، مربع به ضلع 50 از نقطه 100,0']];
+const NLN='(-?\\d+(?:\\.\\d+)?)',DIR={'راست':[1,0],'چپ':[-1,0],'بالا':[0,1],'پایین':[0,-1]},SIDES={'مثلث':3,'سه':3,'چهار':4,'پنج':5,'شش':6,'هفت':7,'هشت':8,'ده':10};
+function nl(src){
+ const fa=fn,R=v=>+v.toFixed(6),out=[];
+ let cur=nlCur.slice(),chg=0,made=0,fitA=0;snap_();
+ const put=sh=>{sh.l=S.cur;S.shapes.push(sh);chg=1;made++};
+ const one=s=>{
+  const cs=[...s.matchAll(new RegExp(NLN+'(?:\\s*,\\s*|،)'+NLN,'g'))].map(r=>[+r[1],+r[2]]),
+  g=w=>{const r=s.match(new RegExp(w+'\\s*(?:برابر|:|=)?\\s*'+NLN));return r?+r[1]:null},hh=+(14/V.z).toPrecision(1);
+  if(/پاک|حذف/.test(s)&&/همه|صفحه|نقشه|کل/.test(s)){S.shapes=[];sel.clear();chg=1;return'همه‌چیز پاک شد'}
+  if(/نمایش همه|زوم|کل نقشه/.test(s)){fitA=1;return'نما تنظیم شد'}
+  const lm=s.match(/لایه[\u0654\u200c]?ی?\s*(?:جدید\s+)?«?([^\s»،.]+)/);
+  if(lm){let i=S.layers.findIndex(L=>L.n.includes(lm[1])||lm[1].includes(L.n));
+   if(i<0){if(!/بساز|جدید|ایجاد/.test(s))throw'لایه‌ای با این نام نیست (برای ساخت بنویسید: لایهٔ جدید '+lm[1]+' بساز)';S.layers.push({n:lm[1],c:'#9d4edd',v:1});i=S.layers.length-1}
+   S.cur=i;S.layers[i].v=1;chg=1;if(!/خط|دایره|مستطیل|مربع|متن|ضلعی|اندازه|مثلث/.test(s))return'لایهٔ جاری: '+S.layers[i].n}
+  const pm=s.match(/(سه|چهار|پنج|شش|هفت|هشت|ده|\d+)[\s\u200c]*ضلعی/)||(/مثلث/.test(s)?[0,'مثلث']:null);
+  if(pm){const n=SIDES[pm[1]]||+pm[1];if(!(n>=3&&n<=200))throw'تعداد ضلع‌ها باید بین ۳ و ۲۰۰ باشد';let r=g('شعاع');const a=g('ضلع');if(r==null&&a!=null)r=a/(2*Math.sin(Math.PI/n));if(!(r>0))throw'شعاع یا طول ضلع (عدد مثبت) را بگویید';
+   const c=cs[0]||cur;put({t:'pl',cl:1,p:Array.from({length:n},(_,i)=>[R(c[0]+r*Math.cos(Math.PI/2+i*2*Math.PI/n)),R(c[1]+r*Math.sin(Math.PI/2+i*2*Math.PI/n))])});return n+'‌ضلعی منتظم کشیده شد'}
+  if(/دایره|گرد/.test(s)){let r=g('شعاع');const d=g('قطر');if(r==null&&d!=null)r=d/2;if(!(r>0))throw'شعاع یا قطر را بگویید، مثلاً: دایره به شعاع 20';put({t:'c',p:[cs[0]||cur],r});return'دایره کشیده شد'}
+  if(/مستطیل|مربع|قاب/.test(s)){let w,h;const wh=s.match(new RegExp(NLN+'\\s*(?:در|×|x|\\*)\\s*'+NLN+'(?![\\d.,،])'));
+   if(wh){w=+wh[1];h=+wh[2]}else{const a=g('ضلع'),L=g('عرض')??g('طول'),T=g('ارتفاع');if(/مربع/.test(s)&&a!=null)w=h=a;else if(L!=null&&T!=null){w=L;h=T}}
+   if(w>0&&h>0){const p=cs[0]||cur;put(mk('rect',[p,[p[0]+w,p[1]+h]]));return'مستطیل '+fmt(w)+'×'+fmt(h)+' کشیده شد'}
+   if(cs.length>1){const sh=mk('rect',[cs[0],cs[1]]);if(!sh)throw'مستطیل بی‌اندازه است';put(sh);return'مستطیل کشیده شد'}throw'اندازه را بگویید، مثلاً: مستطیل 200 در 100'}
+  if(/متن|بنویس/.test(s)){const q=s.match(/[«"“](.+?)[»"”]/)||s.match(/(?:متن|بنویس)\s+(.+?)(?:\s+(?:در|روی|کنار)\s|$)/);if(!q)throw'متن را داخل «» بنویسید';put({t:'t',p:[cs[0]||cur],s:q[1],h:g('ارتفاع')??+(hh*1.2).toPrecision(1)});return'متن نوشته شد'}
+  if(/اندازه/.test(s)&&!/خط|راست|چپ|بالا|پایین/.test(s)){if(cs.length<2||D(cs[0],cs[1])<1e-9)throw'دو نقطهٔ متفاوت بدهید: اندازه از 0,0 تا 100,0';put({t:'d',p:[cs[0],cs[1]],o:hh*3,h:hh});return'اندازه‌گذاری شد'}
+  const tm=[...s.matchAll(new RegExp(NLN+'\\s*(?:واحد|سانتی‌?متر|میلی‌?متر|متر|cm|mm)?\\s*(?:به\\s*(?:سمت\\s*)?)?(راست|چپ|بالا|پایین)','g'))];
+  if(tm.length){let p=cs[0]||cur;const dr_=!/برو/.test(s)||/خط|بکش|رسم/.test(s);for(const t of tm){const d=DIR[t[2]],q=[R(p[0]+d[0]*t[1]),R(p[1]+d[1]*t[1])];if(dr_&&D(p,q)>1e-9)put({t:'pl',p:[p,q]});p=q}cur=p;return dr_?'خط کشیده شد':'نقطهٔ فعلی جابه‌جا شد'}
+  if(/خط|وصل|پاره/.test(s)){const a=cs[0]||cur;let b=cs[1];if(!b){const L=g('طول')??g('اندازه'),an=g('زاویه')??(/عمودی/.test(s)?90:0);if(L==null)throw'دو نقطه یا طول بدهید: خط از 0,0 به 100,50';b=[R(a[0]+L*Math.cos(an*dg)),R(a[1]+L*Math.sin(an*dg))]}if(D(a,b)<1e-9)throw'خط بی‌طول است';put({t:'pl',p:[a,b]});cur=b;return'خط کشیده شد'}
+  if(/شروع|برو به|برو روی/.test(s)&&cs.length){cur=cs[0];return'نقطهٔ شروع: '+cs[0].join(' , ')}
+  throw'متوجه نشدم'};
+ for(const s of fa(src).split(/\n|؛|;|،\s+|\.\s+|\.$|\s+(?:سپس|بعد)\s+/).map(x=>x.trim()).filter(Boolean)){
+  try{out.push(['ok','✓ '+one(s)+'  ← '+s])}catch(e){out.push(['er','✗ '+(typeof e=='string'?e:'خطا در اجرا')+'  ← '+s])}}
+ nlCur=cur;if(chg)persist();else hist.pop();
+ if(made||fitA)fit();ui();return out}
+function nlRun(){const t=$('#nlt').value.trim();if(!t){$('#nlo').innerHTML='<div class="er">یک دستور بنویسید</div>';return}
+ const o=nl(t);$('#nlo').innerHTML=o.map(r=>`<div class="${r[0]}"></div>`).join('');[...$('#nlo').children].forEach((d,i)=>d.textContent=o[i][1])}
+function setTab(n){$('#nlp').hidden=!n;$('#tn').classList.toggle('on',n);$('#tm').classList.toggle('on',!n);if(n)$('#nlt').focus()}
+$('#tm').onclick=()=>setTab(0);$('#tn').onclick=()=>setTab(1);$('#nlr').onclick=nlRun;$('#nlc').onclick=()=>{$('#nlt').value='';$('#nlo').innerHTML=''};
+$('#nlt').addEventListener('keydown',e=>{if(e.key=='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();nlRun()}});
+NLX.forEach(x=>{const b=document.createElement('button');b.textContent=x[0];b.onclick=()=>{$('#nlt').value=x[1]};$('#nlx').appendChild(b)});
+function size(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0);draw()}
+new ResizeObserver(size).observe(cv);
+try{const d=chk(JSON.parse(localStorage.getItem(KEY)||'null'));if(d)S=d;else setTimeout(help,300)}catch(e){setTimeout(help,300)}
+size();if(S.shapes.length)fit();ui();
+</script></body></html>
